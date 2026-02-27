@@ -1,0 +1,21 @@
+# .forceignore — tells the Salesforce CLI what NOT to deploy
+#
+# Similar to .gitignore but for Salesforce metadata deployments.
+# Any file or pattern listed here is skipped when you run:
+#   sf project deploy start --target-org <alias>
+#
+# Without this file, the CLI would try to deploy non-metadata files
+# (like README_SETUP.md) and fail with an error.
+
+# ── Documentation files inside the salesforce/ directory ─────────────────────
+salesforce/README_SETUP.md
+
+# ── OS and editor noise ───────────────────────────────────────────────────────
+**/.DS_Store
+**/.idea
+**/.vscode
+**/node_modules
+
+# ── SFDX internal files (auto-generated, not deployable metadata) ─────────────
+.sfdx/
+.sf/
