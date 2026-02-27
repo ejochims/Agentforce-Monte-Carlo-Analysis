@@ -1,0 +1,59 @@
+# =============================================================================
+# docker-compose.yml — Local development environment
+#
+# Runs the Monte Carlo API service locally with hot-reload enabled.
+# This is the fastest way to start working: one command, everything running.
+#
+# USAGE:
+#   docker-compose up           # Start with logs in foreground
+#   docker-compose up -d        # Start in background (detached)
+#   docker-compose down         # Stop and remove containers
+#   docker-compose logs -f api  # Follow API logs
+#
+# The service will be available at http://localhost:8000
+# API docs at http://localhost:8000/docs
+# =============================================================================
+
+version: "3.9"
+
+services:
+
+  # ── Monte Carlo API ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ..           # Build from repo root (Dockerfile is in deploy/)
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "${PORT:-8000}:8000"      # Local port 8000 → container port 8000
+    environment:
+      # Override any setting from config.py here.
+      # See .env.example for all available variables.
+      - PORT=8000
+      - DEBUG=true
+      - DEFAULT_NUM_SIMULATIONS=${DEFAULT_NUM_SIMULATIONS:-10000}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
+    env_file:
+      - ../.env             # Load from repo-root .env (ignored by git)
+    volumes:
+      # Mount API source code for hot-reload during development.
+      # Remove this volume for a production-like test (uses baked image code).
+      - ../api:/app
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --log-level debug
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+# Explicit network makes it easy to add a frontend or ngrok sidecar later
+networks:
+  default:
+    name: monte-carlo-network

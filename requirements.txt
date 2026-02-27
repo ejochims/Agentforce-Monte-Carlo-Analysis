@@ -1,0 +1,28 @@
+# =============================================================================
+# requirements.txt — Python dependencies for Monte Carlo Forecast API
+#
+# Versions are pinned for reproducibility — critical for demos where you
+# can't afford a surprise breaking change right before the workshop.
+#
+# Update strategy: run `pip install --upgrade <package>` in a dev environment,
+# test thoroughly, then update the pinned version here.
+# =============================================================================
+
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.115.6            # Modern async web framework — generates OpenAPI automatically
+uvicorn[standard]==0.32.1   # ASGI server for FastAPI (includes websockets, httptools)
+gunicorn==23.0.0            # Production process manager — wraps uvicorn workers
+
+# ── Data validation ───────────────────────────────────────────────────────────
+pydantic==2.10.3            # v2: 5-10x faster than v1, used for request/response models
+pydantic-settings==2.7.0    # Load settings from env vars / .env files
+
+# ── Scientific computing ──────────────────────────────────────────────────────
+numpy==2.2.0                # Vectorized Monte Carlo math — core simulation dependency
+
+# ── HTTP middleware ───────────────────────────────────────────────────────────
+# (CORS middleware is built into FastAPI/Starlette — no extra package needed)
+
+# ── Optional: AWS Lambda deployment ──────────────────────────────────────────
+# Uncomment if deploying to Lambda via the deploy.sh lambda target
+# mangum==0.19.0            # Wraps ASGI apps (FastAPI) for AWS Lambda + API Gateway
