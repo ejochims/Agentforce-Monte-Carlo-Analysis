@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <version>62.0</version>
+
+    <types>
+        <name>GenAiFunction</name>
+        <members>Run_Revenue_Forecast</members>
+    </types>
+
+    <types>
+        <name>GenAiPlugin</name>
+        <members>Revenue_Forecasting</members>
+    </types>
+
+</Package>

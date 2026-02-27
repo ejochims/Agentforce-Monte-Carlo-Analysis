@@ -1,14 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  MonteCarloActionHandler.cls-meta.xml
-
-  Salesforce Metadata API descriptor for the MonteCarloActionHandler Apex class.
-  This file is required to deploy the class via SFDX / Metadata API.
-
-  API version 62.0 = Spring '25 release.
-
-  To deploy: sf project deploy start --source-dir salesforce/classes/
--->
 <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>62.0</apiVersion>
     <status>Active</status>
