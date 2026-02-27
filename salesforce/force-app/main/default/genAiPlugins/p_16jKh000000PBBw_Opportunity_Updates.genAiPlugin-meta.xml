@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <canEscalate>false</canEscalate>
+    <description>This topic is chosen when users need to update opportunity fields like stage, close date, or amount directly from the conversation.</description>
+    <developerName>p_16jKh000000PBBw_Opportunity_Updates</developerName>
+    <genAiFunctions>
+        <functionName>EmployeeCopilot__ExtractFieldsAndValuesFromUserInput</functionName>
+    </genAiFunctions>
+    <genAiFunctions>
+        <functionName>EmployeeCopilot__UpdateRecordFields</functionName>
+    </genAiFunctions>
+    <genAiFunctions>
+        <functionName>sales_pipe_mgmt__SuggestOppStage</functionName>
+    </genAiFunctions>
+    <genAiFunctions>
+        <functionName>sales_pipe_mgmt__SuggestOppNextStep</functionName>
+    </genAiFunctions>
+    <genAiFunctions>
+        <functionName>EmployeeCopilot__AnswerQuestionsWithKnowledge</functionName>
+    </genAiFunctions>
+    <genAiPluginInstructions>
+        <description>If the user wants to update opportunity fields, use EmployeeCopilot__ExtractFieldsAndValuesFromUserInput followed by EmployeeCopilot__UpdateRecordFields.</description>
+        <developerName>instruction_0</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_0</masterLabel>
+        <sortOrder>0</sortOrder>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description>If the user requests next step suggestions, use sales_pipe_mgmt__SuggestOppNextStep.</description>
+        <developerName>instruction_2</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_2</masterLabel>
+        <sortOrder>0</sortOrder>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description>If the user asks for stage recommendations, use sales_pipe_mgmt__SuggestOppStage.</description>
+        <developerName>instruction_1</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_1</masterLabel>
+        <sortOrder>0</sortOrder>
+    </genAiPluginInstructions>
+    <language>en_US</language>
+    <localDeveloperName>p_16jKh000000PBBw_Opportunity_Updates</localDeveloperName>
+    <masterLabel>Opportunity Updates</masterLabel>
+    <pluginType>Topic</pluginType>
+    <scope>Your job is to only handle updates to opportunity fields such as stage, close date, and amount. You are not able to analyze pipeline data or forecast revenue.</scope>
+</GenAiPlugin>

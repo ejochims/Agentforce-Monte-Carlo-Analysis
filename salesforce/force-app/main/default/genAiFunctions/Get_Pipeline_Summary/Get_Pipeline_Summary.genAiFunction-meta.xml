@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Get Pipeline Summary</masterLabel>
+    <developerName>Get_Pipeline_Summary</developerName>
+    <description>Queries open Opportunities and returns a pipeline summary broken down by stage, weighted value, and top deals.</description>
+    <invocationTarget>PipelineSummaryAction</invocationTarget>
+    <invocationTargetType>apex</invocationTargetType>
+    <capability>
+        Use this action when the user asks for a pipeline overview, deal counts by stage,
+        total pipeline value, weighted pipeline, top deals, or a summary of open opportunities.
+        Examples: "What does my pipeline look like?", "How many deals do I have in each stage?",
+        "What are my top 5 deals?", "Give me a pipeline breakdown for this quarter."
+        Do not use for probability forecasting or opportunity updates.
+    </capability>
+
+    <genAiFunctionInputs>
+        <developerName>timeHorizonDays</developerName>
+        <description>Only include opportunities closing within this many days. Use 90 for this quarter, 180 for this half-year. Leave blank for all open pipeline.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>ownerIdFilter</developerName>
+        <description>Salesforce User ID to filter by owner. Leave blank for all reps.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>accountIdFilter</developerName>
+        <description>Salesforce Account ID to limit the summary to a single account.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>maxTopDeals</developerName>
+        <description>Maximum number of top deals to list by value. Default is 5.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionOutputs>
+        <developerName>summary</developerName>
+        <description>Natural language pipeline summary ready to deliver to the user.</description>
+        <dataType>Text</dataType>
+        <isRequired>true</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>totalPipelineValue</developerName>
+        <description>Sum of all open opportunity amounts in USD.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>weightedPipelineValue</developerName>
+        <description>Sum of (Amount x Probability) — a realistic revenue estimate.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>totalDealCount</developerName>
+        <description>Total number of open opportunities in the summary.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>stageBreakdownJson</developerName>
+        <description>JSON array of stage breakdowns with count and value per stage.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>topDealsJson</developerName>
+        <description>JSON array of top deals by amount with name, stage, and close date.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>success</developerName>
+        <description>True if the summary was generated successfully.</description>
+        <dataType>Boolean</dataType>
+        <isRequired>true</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>errorMessage</developerName>
+        <description>Error description if success is false.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+</GenAiFunction>

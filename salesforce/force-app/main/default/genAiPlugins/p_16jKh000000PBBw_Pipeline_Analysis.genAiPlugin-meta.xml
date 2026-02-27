@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <canEscalate>false</canEscalate>
+    <description>This topic is used when users request insights into their open pipeline data, such as deal stages and sizes, to assess sales progress.</description>
+    <developerName>p_16jKh000000PBBw_Pipeline_Analysis</developerName>
+    <genAiFunctions>
+        <functionName>Analytics__SummarizeDashboard</functionName>
+    </genAiFunctions>
+    <genAiFunctions>
+        <functionName>Analytics__AnalyzeMetric</functionName>
+    </genAiFunctions>
+    <genAiFunctions>
+        <functionName>EmployeeCopilot__AnswerQuestionsWithKnowledge</functionName>
+    </genAiFunctions>
+    <genAiPluginInstructions>
+        <description>If the query involves analyzing metrics, use Analytics__AnalyzeMetric.</description>
+        <developerName>instruction_1</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_1</masterLabel>
+        <sortOrder>0</sortOrder>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description>If the user asks for a summary of the pipeline, use Analytics__SummarizeDashboard.</description>
+        <developerName>instruction_0</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_0</masterLabel>
+        <sortOrder>0</sortOrder>
+    </genAiPluginInstructions>
+    <language>en_US</language>
+    <localDeveloperName>p_16jKh000000PBBw_Pipeline_Analysis</localDeveloperName>
+    <masterLabel>Pipeline Analysis</masterLabel>
+    <pluginType>Topic</pluginType>
+    <scope>Your job is to only analyze pipeline data by stage and deal size. You are not able to forecast revenue or update opportunity records.</scope>
+</GenAiPlugin>

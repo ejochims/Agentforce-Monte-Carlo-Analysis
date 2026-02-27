@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Update Opportunity</masterLabel>
+    <developerName>Update_Opportunity</developerName>
+    <description>Updates an opportunity field (Stage, Close Date, or Amount) by opportunity name or ID.</description>
+    <invocationTarget>UpdateOpportunityAction</invocationTarget>
+    <invocationTargetType>apex</invocationTargetType>
+    <capability>
+        Use this action when the user wants to change or update an opportunity. Supported updates:
+        stage (e.g., "move Deal X to Proposal"), close date (e.g., "push the close date to April 30"),
+        and amount (e.g., "update the amount on Deal X to $2.5M").
+        Always confirm the specific change with the user before executing.
+        Do not use for lookups, summaries, or revenue forecasting.
+    </capability>
+
+    <genAiFunctionInputs>
+        <developerName>opportunityId</developerName>
+        <description>Salesforce ID of the opportunity to update. Use this when the ID is known for accuracy.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>opportunityName</developerName>
+        <description>Name or partial name of the opportunity to find. Used when ID is not available. The action will search and may return multiple matches for clarification.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>fieldToUpdate</developerName>
+        <description>Which field to update. Must be exactly one of: STAGE, CLOSEDATE, AMOUNT</description>
+        <dataType>Text</dataType>
+        <isRequired>true</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>newValue</developerName>
+        <description>The new value. For STAGE: exact stage name. For CLOSEDATE: YYYY-MM-DD format. For AMOUNT: number like 2500000.</description>
+        <dataType>Text</dataType>
+        <isRequired>true</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionOutputs>
+        <developerName>success</developerName>
+        <description>True if the opportunity was updated successfully.</description>
+        <dataType>Boolean</dataType>
+        <isRequired>true</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>confirmationMessage</developerName>
+        <description>Human-readable confirmation of what was updated, ready to deliver to the user.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>updatedOpportunityName</developerName>
+        <description>The name of the opportunity that was updated.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>multipleMatchesFound</developerName>
+        <description>True if the name search returned multiple opportunities requiring clarification.</description>
+        <dataType>Boolean</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>matchOptionsJson</developerName>
+        <description>JSON array of matching opportunities when multiple matches are found.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>errorMessage</developerName>
+        <description>Error description if success is false.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+</GenAiFunction>
