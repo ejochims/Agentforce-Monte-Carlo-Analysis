@@ -8,17 +8,42 @@ Agentforce to the Monte Carlo simulation service. Follow these steps in order.
 ## Prerequisites
 
 - Salesforce org with Agentforce enabled (Spring '25 or later)
-- Deployed Monte Carlo FastAPI service (see `deploy/` directory)
-- Your service's public URL (e.g., `https://monte-carlo-forecast.herokuapp.com`)
-- SFDX CLI installed locally (for deploying Apex)
+- SFDX CLI installed locally (`npm install -g @salesforce/cli`)
+
+The FastAPI service is already live at `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com`.
+All credential and action metadata in this repo already point to that URL — no
+URL configuration needed.
+
+---
+
+## Step 0: One-Command Deploy (fastest path)
+
+```bash
+# Deploy all Salesforce metadata in a single command:
+# - MonteCarloActionHandler Apex class + test class
+# - Named Credential (pre-configured for monte-carlo-forecast.herokuapp.com)
+# - External Credential
+# - Remote Site Setting
+# - GenAiFunction (Agentforce action definition)
+# - GenAiPlugin (Agentforce topic)
+
+sf project deploy start \
+  --manifest salesforce/manifest/package.xml \
+  --target-org <your-org-alias>
+```
+
+After this succeeds, skip to **Step 4** to wire the topic to your agent.
+Steps 1–3 below document what was deployed and how to verify it.
 
 ---
 
 ## Step 1: Deploy the Apex Class
 
+The Apex class is included in the manifest above. To deploy it in isolation:
+
 ```bash
-# From the repo root — deploys everything in salesforce/force-app/
 sf project deploy start \
+  --source-dir salesforce/force-app/main/default/classes \
   --target-org <your-org-alias>
 ```
 
@@ -26,12 +51,19 @@ Verify in Setup → Apex Classes that `MonteCarloActionHandler` appears.
 
 ---
 
-## Step 2: Create a Named Credential
+## Step 2: Named Credential (pre-configured — deployed via manifest)
 
 Named Credentials store the external service URL and authentication so Apex
 code never hardcodes endpoints or secrets.
 
-### 2a. Create an External Credential (authentication container)
+If you ran Step 0 (one-command deploy), the Named Credential is already deployed
+and points to `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com`.
+
+**To verify:** Setup → Security → Named Credentials → find `Monte Carlo API`
+
+### Manual setup (if not using the manifest)
+
+#### 2a. Create an External Credential (authentication container)
 
 1. Setup → Security → Named Credentials → **External Credentials** tab
 2. Click **New**
@@ -48,14 +80,14 @@ code never hardcodes endpoints or secrets.
 > **If you use API key authentication**, select "Custom Header" protocol and add
 > a header named `X-API-Key` with your key value. Never put secrets in code.
 
-### 2b. Create the Named Credential
+#### 2b. Create the Named Credential
 
 1. Setup → Security → Named Credentials → **Named Credentials** tab
 2. Click **New**
 3. Fill in:
    - **Label**: `Monte Carlo API`
    - **Name**: `MonteCarlo_API`  ← must match the constant in the Apex class
-   - **URL**: `https://your-service-url.com`  ← your deployed service URL
+   - **URL**: `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com`
    - **External Credential**: `Monte Carlo API Auth` (from step 2a)
    - **Allow Formulas in HTTP Header**: checked
    - **Allow Formulas in HTTP Body**: checked
@@ -66,39 +98,56 @@ code never hardcodes endpoints or secrets.
 ## Step 3: Register as an External Service
 
 External Services lets Salesforce "understand" the API shape by importing the
-OpenAPI schema. This generates Flow/Apex-callable classes automatically.
+OpenAPI schema. This step is still done via the Setup UI (External Service
+registration is not deployable via metadata).
 
 1. Setup → Integrations → **External Services**
 2. Click **New External Service**
 3. Fill in:
    - **External Service Name**: `MonteCarloForecastAPI`
-   - **Select Named Credential**: `Monte Carlo API` (from step 2b)
+   - **Select Named Credential**: `Monte Carlo API`
    - **Service Schema**: Select **"Enter Service URL"**
-   - **Schema URL**: `https://your-service-url.com/api/v1/schema`
+   - **Schema URL**: `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com/api/v1/schema`
 4. Click **Save & Next** — Salesforce will fetch and parse the OpenAPI schema
 5. Review the operations shown (you should see `runMonteCarloSimulation` and `healthCheck`)
 6. Click **Next** and then **Done**
 
 > **Troubleshooting**: If the schema fails to load, verify the service is running
-> by visiting `https://your-service-url.com/health` in a browser. Also confirm
-> the Named Credential URL doesn't have a trailing slash.
+> by visiting `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com/health` in a browser.
+> Also confirm the Named Credential URL doesn't have a trailing slash.
 
 ---
 
-## Step 4: Configure the Agentforce Agent Action
+## Step 4: Wire the Agent Topic (GenAiPlugin → Your Agent)
 
-This connects the Apex class to the Agentforce AI orchestrator.
+The `Revenue_Forecasting` topic and `Run_Revenue_Forecast` action are deployed
+via the manifest in Step 0. The final step is attaching the topic to your agent.
 
-1. Setup → Agent Studio → **Agents**
+1. Setup → **Agentforce** → **Agents**
 2. Open your Agent (or create a new one)
-3. Go to the **Actions** tab
-4. Click **New Agent Action**
-5. Fill in:
+3. Go to the **Topics** tab
+4. Click **Add Topic from Org**
+5. Select **Revenue Forecasting** — this includes the `Run Revenue Forecast` action
+6. Save and **Activate** the agent
+
+The action's routing instructions (capability text) are pre-written in
+`genAiFunctions/Run_Revenue_Forecast.genAiFunction-meta.xml`. The LLM will
+automatically invoke the forecast when users ask questions like:
+- "What's our chance of hitting $10M this quarter?"
+- "Give me a Q1 pipeline forecast"
+- "What's the probability we hit quota?"
+
+### Manual action setup (if not using the deployed GenAiFunction)
+
+If you need to register the action manually instead:
+
+1. Setup → Agent Studio → **Agents** → [Your Agent] → **Actions** → **New Agent Action**
+2. Fill in:
    - **Reference Action Type**: `Apex`
    - **Apex Class**: `MonteCarloActionHandler`
    - **Agent Action Label**: `Run Revenue Forecast`
    - **Agent Action API Name**: `Run_Revenue_Forecast`
-6. Under **Instructions** (this is the prompt that tells the LLM when to use this):
+3. Under **Instructions**:
    ```
    Use this action when the user asks about revenue forecasts, pipeline probability,
    likelihood of hitting quota, quarter-end predictions, or "what are our chances of
@@ -109,8 +158,8 @@ This connects the Apex class to the Agentforce AI orchestrator.
    time_horizon_days (e.g., "this quarter" ≈ 90 days, "this half" ≈ 180 days).
    When the user mentions a revenue target like "$10M", pass it in revenue_targets_csv.
    ```
-7. Map the input/output variables (see table below)
-8. Save and **Activate** the action
+4. Map the input/output variables (see table below)
+5. Save and **Activate** the action
 
 ### Input Variable Mapping
 
@@ -160,41 +209,20 @@ System.debug('Success: ' + outputs[0].success);
 
 ---
 
-## Metadata Templates (for version control)
+## Deployed Metadata Files
 
-### Named Credential XML (for SFDX deployment)
+All metadata is pre-configured and lives in `salesforce/force-app/main/default/`.
+No templates to fill in — the files are ready to deploy as-is.
 
-Save as `salesforce/namedCredentials/MonteCarlo_API.namedCredential-meta.xml`:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<NamedCredential xmlns="http://soap.sforce.com/2006/04/metadata">
-    <label>Monte Carlo API</label>
-    <name>MonteCarlo_API</name>
-    <protocol>NoAuthentication</protocol>
-    <url>https://YOUR_SERVICE_URL_HERE</url>
-    <allowMergeFieldsInBody>true</allowMergeFieldsInBody>
-    <allowMergeFieldsInHeader>true</allowMergeFieldsInHeader>
-    <generateAuthorizationHeader>false</generateAuthorizationHeader>
-</NamedCredential>
-```
-
-> Replace `YOUR_SERVICE_URL_HERE` with your actual deployed service URL before deploying.
-
-### Remote Site Setting XML
-
-Save as `salesforce/remoteSiteSettings/MonteCarlo_API.remoteSite-meta.xml`:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<RemoteSiteSetting xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Monte Carlo Revenue Forecast API - allows Apex callouts to simulation service</description>
-    <disableProtocolSecurity>false</disableProtocolSecurity>
-    <isActive>true</isActive>
-    <name>MonteCarlo_API</name>
-    <url>https://YOUR_SERVICE_URL_HERE</url>
-</RemoteSiteSetting>
-```
+| File | Type | Purpose |
+|------|------|---------|
+| `externalCredentials/MonteCarlo_API_Auth.externalCredential-meta.xml` | ExternalCredential | Auth container (Anonymous — no credentials needed) |
+| `namedCredentials/MonteCarlo_API.namedCredential-meta.xml` | NamedCredential | Service endpoint (`monte-carlo-forecast.herokuapp.com`) |
+| `remoteSiteSettings/MonteCarlo_API.remoteSite-meta.xml` | RemoteSiteSetting | Callout whitelist for the Heroku domain |
+| `genAiFunctions/Run_Revenue_Forecast.genAiFunction-meta.xml` | GenAiFunction | Agentforce action wiring to MonteCarloActionHandler |
+| `genAiPlugins/Revenue_Forecasting.genAiPlugin-meta.xml` | GenAiPlugin | Agentforce topic grouping the forecast action |
+| `classes/MonteCarloActionHandler.cls` | ApexClass | Core callout and response logic |
+| `classes/MonteCarloActionHandlerTest.cls` | ApexClass | Unit tests (required for org deployment coverage gates) |
 
 ---
 

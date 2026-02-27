@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Run_Revenue_Forecast.genAiFunction-meta.xml
+
+  PURPOSE:
+    Registers the MonteCarloActionHandler Apex class as an Agentforce Action
+    (GenAiFunction). This is what wires the Agentforce LLM orchestrator to
+    the Apex code — without this file, the agent has no way to invoke the
+    Monte Carlo simulation.
+
+  HOW IT WORKS:
+    When an Agentforce agent processes a user message, the LLM reads the
+    <capability> text to decide whether to invoke this action. Think of
+    <capability> as the "routing prompt" — write it to match the exact
+    kinds of questions your users will ask.
+
+  INPUTS:
+    These map to the @InvocableVariable fields in ActionInput. The LLM
+    extracts values from natural language and populates these automatically.
+    Example: "What are our chances of hitting $10M this quarter?" →
+      timeHorizonDays = 90, revenueTargetsCSV = "10000000"
+
+  DEPLOY ORDER:
+    1. ApexClass:MonteCarloActionHandler must be deployed first
+    2. Then deploy this GenAiFunction
+    3. Then deploy GenAiPlugin:Revenue_Forecasting (which references this)
+
+  DEPLOY:
+    sf project deploy start -m "GenAiFunction:Run_Revenue_Forecast" --target-org <alias>
+-->
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Run Revenue Forecast</masterLabel>
+    <developerName>Run_Revenue_Forecast</developerName>
+    <description>Queries open Salesforce Opportunities and runs a Monte Carlo simulation to forecast revenue probability. Returns probability-based revenue estimates and the likelihood of hitting specific revenue targets.</description>
+
+    <!-- invocationTarget: must exactly match the Apex class name -->
+    <invocationTarget>MonteCarloActionHandler</invocationTarget>
+    <invocationTargetType>apex</invocationTargetType>
+
+    <!--
+      capability: the natural language description the LLM uses to route
+      requests to this action. Be specific — vague text causes missed invocations.
+    -->
+    <capability>
+        Use this action when the user asks about revenue forecasts, pipeline probability,
+        likelihood of hitting quota or a revenue target, quarter-end predictions, or
+        questions like "what are our chances of hitting $10M" or "what's our Q1 forecast".
+        This action queries live Opportunity data from Salesforce and runs a Monte Carlo
+        simulation to return probability-based revenue estimates. When the user specifies
+        a time period like "this quarter", convert it to days (90 for a quarter, 180 for
+        half-year). When the user mentions a dollar target like "$10M", pass it as a
+        revenue target.
+    </capability>
+
+    <!-- ── Inputs (map to ActionInput @InvocableVariable fields) ── -->
+
+    <genAiFunctionInputs>
+        <developerName>timeHorizonDays</developerName>
+        <description>Only include opportunities closing within this many days. Use 90 for this quarter, 180 for this half-year. Leave blank for all open pipeline.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>numSimulations</developerName>
+        <description>Number of Monte Carlo iterations. Default 10000 gives accurate results. Use 50000 for high-stakes decisions.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>revenueTargetsCSV</developerName>
+        <description>Revenue targets to calculate hit-probability for, as comma-separated USD amounts. Example: "5000000,10000000,20000000". Extracted from user's question when they mention dollar amounts.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>stageFilter</developerName>
+        <description>Comma-separated list of opportunity stages to include. Example: "Proposal/Price Quote,Value Proposition". Leave blank for all stages.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>minProbability</developerName>
+        <description>Minimum win probability (0-100) to include in the forecast. Example: 20 means only deals with 20%+ probability.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <genAiFunctionInputs>
+        <developerName>ownerIdFilter</developerName>
+        <description>Salesforce User ID to filter by opportunity owner. Leave blank to include all reps. Useful when a manager asks about a specific rep's pipeline.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionInputs>
+
+    <!-- ── Outputs (map to ActionOutput @InvocableVariable fields) ── -->
+
+    <genAiFunctionOutputs>
+        <developerName>summary</developerName>
+        <description>Ready-to-deliver natural language summary of the forecast, e.g. "Based on your 47 open opportunities, expected revenue is $8.3M with a 68% chance of hitting $10M."</description>
+        <dataType>Text</dataType>
+        <isRequired>true</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>expectedRevenue</developerName>
+        <description>Mean (average) revenue outcome across all simulation runs, in USD.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>medianRevenue</developerName>
+        <description>Median revenue outcome — the single most likely result.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>p10Revenue</developerName>
+        <description>10th percentile revenue — pessimistic scenario (only 10% of outcomes are lower).</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>p90Revenue</developerName>
+        <description>90th percentile revenue — optimistic scenario (only 10% of outcomes are higher).</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>targetAnalysisJson</developerName>
+        <description>JSON array of revenue targets with hit-probabilities. Example: [{"target":10000000,"probability_pct":"68.4%"}]</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>opportunitiesAnalyzed</developerName>
+        <description>Number of opportunities included in the simulation after filters were applied.</description>
+        <dataType>Number</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>success</developerName>
+        <description>True if the simulation ran successfully. False if there was an error.</description>
+        <dataType>Boolean</dataType>
+        <isRequired>true</isRequired>
+    </genAiFunctionOutputs>
+
+    <genAiFunctionOutputs>
+        <developerName>errorMessage</developerName>
+        <description>If success is false, contains a description of what went wrong.</description>
+        <dataType>Text</dataType>
+        <isRequired>false</isRequired>
+    </genAiFunctionOutputs>
+
+</GenAiFunction>

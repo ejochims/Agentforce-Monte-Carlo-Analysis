@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  package.xml — Salesforce Deployment Manifest
+
+  PURPOSE:
+    Specifies exactly which metadata to deploy when running:
+      sf project deploy start --manifest salesforce/manifest/package.xml --target-org <alias>
+
+  This is more reliable than "deploy everything" because it:
+    1. Enforces the correct deployment order (Apex before GenAiFunction, etc.)
+    2. Makes it clear to future maintainers what this project installs
+    3. Avoids accidentally deploying unrelated metadata from the org
+
+  DEPLOYMENT ORDER NOTE:
+    Salesforce deploys all metadata in a single transaction, but the
+    dependency order is validated at deploy time:
+      ApexClass → ExternalCredential → NamedCredential → RemoteSiteSetting
+      → GenAiFunction → GenAiPlugin
+
+    If you deploy via package.xml, all items deploy together and Salesforce
+    resolves dependencies automatically. If deploying piece by piece (for
+    debugging), follow the order in README_SETUP.md Step 0.
+
+  AFTER DEPLOYMENT:
+    The Agentforce Agent still needs to be configured to use the
+    Revenue_Forecasting topic. See README_SETUP.md for agent wiring steps.
+-->
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <version>62.0</version>
+
+    <!-- Apex Classes (deploy before GenAiFunction references them) -->
+    <types>
+        <name>ApexClass</name>
+        <members>MonteCarloActionHandler</members>
+        <members>MonteCarloActionHandlerTest</members>
+    </types>
+
+    <!-- External Credential (deploy before NamedCredential references it) -->
+    <types>
+        <name>ExternalCredential</name>
+        <members>MonteCarlo_API_Auth</members>
+    </types>
+
+    <!-- Named Credential (depends on ExternalCredential) -->
+    <types>
+        <name>NamedCredential</name>
+        <members>MonteCarlo_API</members>
+    </types>
+
+    <!-- Remote Site Setting (whitelist for Apex callouts) -->
+    <types>
+        <name>RemoteSiteSetting</name>
+        <members>MonteCarlo_API</members>
+    </types>
+
+    <!-- Agentforce Action (depends on ApexClass) -->
+    <types>
+        <name>GenAiFunction</name>
+        <members>Run_Revenue_Forecast</members>
+    </types>
+
+    <!-- Agentforce Topic/Plugin (depends on GenAiFunction) -->
+    <types>
+        <name>GenAiPlugin</name>
+        <members>Revenue_Forecasting</members>
+    </types>
+
+</Package>

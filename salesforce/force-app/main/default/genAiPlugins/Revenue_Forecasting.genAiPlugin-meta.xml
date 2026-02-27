@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Revenue_Forecasting.genAiPlugin-meta.xml
+
+  PURPOSE:
+    GenAiPlugin is the Agentforce "Topic" — it groups one or more GenAiFunctions
+    (actions) under a logical capability area. When you add this plugin to an
+    Agentforce Agent, the agent gains the ability to run revenue forecasts.
+
+  HOW TO ATTACH TO AN AGENT:
+    In Salesforce Setup → Agentforce → Agents → [Your Agent] → Topics:
+    1. Click "Add Topic"
+    2. Select "Revenue_Forecasting" from the list
+    3. The agent will now automatically invoke Run_Revenue_Forecast when
+       users ask forecast-related questions
+
+  ADDING MORE ACTIONS:
+    If you create additional forecast-related GenAiFunctions (e.g., a
+    "Pipeline Summary" or "Forecast by Rep" action), add them here:
+      <genAiFunctions>
+          <functionName>Your_New_Function</functionName>
+      </genAiFunctions>
+
+  DEPLOY ORDER:
+    GenAiFunction:Run_Revenue_Forecast must be deployed before this plugin.
+
+  DEPLOY:
+    sf project deploy start -m "GenAiPlugin:Revenue_Forecasting" --target-org <alias>
+-->
+<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Revenue Forecasting</masterLabel>
+    <developerName>Revenue_Forecasting</developerName>
+    <description>Monte Carlo simulation capabilities for revenue forecasting. Enables the agent to analyze open pipeline opportunities and return probability-based revenue estimates, including likelihood of hitting specific revenue targets.</description>
+
+    <genAiFunctions>
+        <functionName>Run_Revenue_Forecast</functionName>
+    </genAiFunctions>
+</GenAiPlugin>

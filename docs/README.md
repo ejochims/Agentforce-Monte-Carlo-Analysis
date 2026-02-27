@@ -165,10 +165,9 @@ Returns the OpenAPI 3.0 spec. Use this URL when registering the External Service
 
 ## Registering as a Salesforce External Service
 
-1. Deploy the service to a public URL (see Deployment section below)
-2. In Salesforce Setup: **Integrations → External Services → New**
-3. Enter the schema URL: `https://your-service.com/api/v1/schema`
-4. Follow the detailed walkthrough in `salesforce/README_SETUP.md`
+1. In Salesforce Setup: **Integrations → External Services → New**
+2. Enter the schema URL: `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com/api/v1/schema`
+3. Follow the detailed walkthrough in `salesforce/README_SETUP.md`
 
 ---
 
@@ -176,16 +175,18 @@ Returns the OpenAPI 3.0 spec. Use this URL when registering the External Service
 
 ### Option 1: Heroku (recommended for demos)
 
-```bash
-# One-time setup
-heroku create your-app-name
-heroku config:set PORT=\$PORT  # Heroku sets this automatically
+The service is already deployed at `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com`.
 
-# Deploy
-./deploy/deploy.sh heroku --app your-app-name
+To redeploy (after code changes):
+
+```bash
+./deploy/deploy.sh heroku --app monte-carlo-forecast
 ```
 
-After deploy, your schema URL is: `https://your-app-name.herokuapp.com/api/v1/schema`
+Key URLs:
+- Health check: `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com/health`
+- API docs: `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com/docs`
+- Schema URL: `https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com/api/v1/schema`
 
 ### Option 2: AWS Lambda (production-ready)
 
@@ -217,11 +218,12 @@ ngrok http 8000
 See the complete step-by-step guide in `salesforce/README_SETUP.md`.
 
 **TL;DR:**
-1. Deploy Apex class (`sf project deploy start --source-dir salesforce/classes/`)
-2. Create Named Credential pointing to your service URL
-3. Register External Service using `/api/v1/schema` URL
-4. Create Agent Action in Setup → Agent Studio → Actions → New
-5. Write the instruction: *"Use when user asks about revenue probability or pipeline forecasts..."*
+1. Deploy all Salesforce metadata in one command (credentials + action + topic are pre-configured):
+   ```bash
+   sf project deploy start --manifest salesforce/manifest/package.xml --target-org <alias>
+   ```
+2. In Setup → Agentforce → Agents → [Your Agent] → Topics, add the `Revenue_Forecasting` topic
+3. Ask your agent: *"What's our chance of hitting $10M this quarter?"*
 
 ---
 

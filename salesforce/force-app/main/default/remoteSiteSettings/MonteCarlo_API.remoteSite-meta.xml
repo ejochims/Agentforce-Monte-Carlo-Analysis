@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MonteCarlo_API.remoteSite-meta.xml
+
+  PURPOSE:
+    Remote Site Settings whitelist the external URL for Apex HTTP callouts.
+    Even when using Named Credentials, Salesforce requires the base domain
+    to be registered here before any callout can succeed.
+
+  *** URL IS PRE-CONFIGURED ***
+    Points to the live Heroku deployment. If the service moves, update the
+    url field here and in MonteCarlo_API.namedCredential-meta.xml.
+
+  DEPLOY:
+    sf project deploy start -m "RemoteSiteSetting:MonteCarlo_API" --target-org <alias>
+-->
+<RemoteSiteSetting xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Monte Carlo Revenue Forecast API — allows Apex callouts to the FastAPI simulation service hosted on Heroku</description>
+    <disableProtocolSecurity>false</disableProtocolSecurity>
+    <isActive>true</isActive>
+    <name>MonteCarlo_API</name>
+    <url>https://monte-carlo-forecast-0b7519dafaaf.herokuapp.com</url>
+</RemoteSiteSetting>

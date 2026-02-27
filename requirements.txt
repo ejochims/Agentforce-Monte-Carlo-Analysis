@@ -18,11 +18,10 @@ pydantic==2.10.3            # v2: 5-10x faster than v1, used for request/respons
 pydantic-settings==2.7.0    # Load settings from env vars / .env files
 
 # ── Scientific computing ──────────────────────────────────────────────────────
-numpy==2.2.0                # Vectorized Monte Carlo math — core simulation dependency
+numpy>=2.0.0,<2.2           # Vectorized Monte Carlo math — core simulation dependency (2.2+ needs Python 3.10+)
 
 # ── HTTP middleware ───────────────────────────────────────────────────────────
 # (CORS middleware is built into FastAPI/Starlette — no extra package needed)
 
-# ── Optional: AWS Lambda deployment ──────────────────────────────────────────
-# Uncomment if deploying to Lambda via the deploy.sh lambda target
-# mangum==0.19.0            # Wraps ASGI apps (FastAPI) for AWS Lambda + API Gateway
+# ── AWS Lambda deployment ─────────────────────────────────────────────────────
+mangum==0.19.0              # Wraps ASGI apps (FastAPI) for AWS Lambda + API Gateway
