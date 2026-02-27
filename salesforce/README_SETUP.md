@@ -17,9 +17,8 @@ Agentforce to the Monte Carlo simulation service. Follow these steps in order.
 ## Step 1: Deploy the Apex Class
 
 ```bash
-# From the repo root:
+# From the repo root — deploys everything in salesforce/force-app/
 sf project deploy start \
-  --source-dir salesforce/classes/ \
   --target-org <your-org-alias>
 ```
 

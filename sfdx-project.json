@@ -1,0 +1,15 @@
+{
+  "packageDirectories": [
+    {
+      "path": "salesforce/force-app",
+      "default": true,
+      "package": "MonteCarloForecast",
+      "versionName": "Initial Release",
+      "versionNumber": "1.0.0.NEXT"
+    }
+  ],
+  "name": "MonteCarloForecast",
+  "namespace": "",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "62.0"
+}
