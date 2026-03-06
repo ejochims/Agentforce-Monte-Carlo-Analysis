@@ -3,6 +3,11 @@
     <version>62.0</version>
 
     <types>
+        <name>Flow</name>
+        <members>Run_Revenue_Forecast_Monte_Carlo</members>
+    </types>
+
+    <types>
         <name>GenAiFunction</name>
         <members>Run_Revenue_Forecast</members>
     </types>

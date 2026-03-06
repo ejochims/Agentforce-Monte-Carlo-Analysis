@@ -1,38 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Revenue_Forecasting.genAiPlugin-meta.xml
-
-  PURPOSE:
-    GenAiPlugin is the Agentforce "Topic" — it groups one or more GenAiFunctions
-    (actions) under a logical capability area. When you add this plugin to an
-    Agentforce Agent, the agent gains the ability to run revenue forecasts.
-
-  HOW TO ATTACH TO AN AGENT:
-    In Salesforce Setup → Agentforce → Agents → [Your Agent] → Topics:
-    1. Click "Add Topic"
-    2. Select "Revenue_Forecasting" from the list
-    3. The agent will now automatically invoke Run_Revenue_Forecast when
-       users ask forecast-related questions
-
-  ADDING MORE ACTIONS:
-    If you create additional forecast-related GenAiFunctions (e.g., a
-    "Pipeline Summary" or "Forecast by Rep" action), add them here:
-      <genAiFunctions>
-          <functionName>Your_New_Function</functionName>
-      </genAiFunctions>
-
-  DEPLOY ORDER:
-    GenAiFunction:Run_Revenue_Forecast must be deployed before this plugin.
-
-  DEPLOY:
-    sf project deploy start -m "GenAiPlugin:Revenue_Forecasting" --target-org <alias>
--->
-<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
-    <masterLabel>Revenue Forecasting</masterLabel>
+<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <canEscalate>false</canEscalate>
+    <description>Handles all revenue probability questions using Monte Carlo simulation on live Salesforce opportunity data. Use this topic when the user asks about hitting a revenue target, quota attainment, pipeline probability, or likelihood of closing a specific dollar amount this quarter or half-year.</description>
     <developerName>Revenue_Forecasting</developerName>
-    <description>Monte Carlo simulation capabilities for revenue forecasting. Enables the agent to analyze open pipeline opportunities and return probability-based revenue estimates, including likelihood of hitting specific revenue targets.</description>
-
     <genAiFunctions>
         <functionName>Run_Revenue_Forecast</functionName>
     </genAiFunctions>
+    <genAiPluginInstructions>
+        <description>For ANY question about hitting a revenue target, quota, or pipeline probability — ALWAYS call Run_Revenue_Forecast. Extract the dollar amount the user mentioned (e.g. "25 million" → 25000000) and pass it as revenueTarget. If the user says "this quarter" leave timeHorizonDays blank (it defaults to quarter end automatically). Only set timeHorizonDays if the user explicitly mentions a different time window (e.g. "next 60 days" → 60, "this half" → 180). Deliver the summary field verbatim as your response — it is already formatted for the user.</description>
+        <developerName>instruction_mc</developerName>
+        <language xsi:nil="true"/>
+        <masterLabel>instruction_mc</masterLabel>
+        <sortOrder>0</sortOrder>
+    </genAiPluginInstructions>
+    <language>en_US</language>
+    <masterLabel>Revenue Forecasting</masterLabel>
+    <pluginType>Topic</pluginType>
+    <scope>You run Monte Carlo revenue simulations to answer probability questions about pipeline. For every request in this topic, call Run_Revenue_Forecast with the dollar target the user mentioned. Always present the probability of hitting that target, the expected revenue, and the realistic range (p10 to p90). Keep your answer concise and conversational.</scope>
 </GenAiPlugin>

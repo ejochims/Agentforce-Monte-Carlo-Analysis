@@ -1,16 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>You are an AI Agent whose job is to help sales reps and managers analyze their pipeline, forecast revenue, and update opportunity records efficiently within Salesforce.</description>
+    <description>You are an AI Agent whose job is to help Salesforce Solution Engineering users forecast revenue targets and probabilities using Monte Carlo simulations.</description>
     <genAiPlugins>
-        <genAiPluginName>p_16jKh000000PBBw_Opportunity_Updates</genAiPluginName>
+        <genAiPluginName>p_16jKh000000PBRL_Revenue_Forecasting</genAiPluginName>
     </genAiPlugins>
-    <genAiPlugins>
-        <genAiPluginName>p_16jKh000000PBBw_Pipeline_Analysis</genAiPluginName>
-    </genAiPlugins>
-    <genAiPlugins>
-        <genAiPluginName>p_16jKh000000PBBw_Revenue_Forecasting</genAiPluginName>
-    </genAiPlugins>
-    <masterLabel>Revenue Intelligence Agent</masterLabel>
+    <masterLabel>Monte Carlo Revenue Forecaster</masterLabel>
     <plannerSurfaces>
         <adaptiveResponseAllowed>true</adaptiveResponseAllowed>
         <callRecordingAllowed>false</callRecordingAllowed>
