@@ -4,8 +4,8 @@
 > simulations on live pipeline data to answer probability-based revenue questions.
 >
 > *"What's my chance of hitting $25M this quarter?"*
-> *"Am I on track for quota?"*
-> *"What's a realistic revenue range for Q1?"*
+> *"What is my commit vs. best case?"*
+> *"What if the Acme deal slips 30 days?"*
 
 The agent queries the current user's open Opportunities in real time, ships only the
 anonymized deal math to a stateless simulation engine on Heroku, runs 10,000 Monte Carlo
@@ -13,12 +13,44 @@ scenarios, and returns a plain-English answer — in under a second.
 
 ---
 
-## How It Works
+## Three Capabilities
 
-A user asks a natural-language question in Slack, Experience Cloud, or any Agentforce
-surface. The LLM orchestrator recognizes a forecasting intent, invokes the
-`Run Revenue Forecast` action, and returns a probabilistic answer derived from live
-Opportunity data — not a gut feeling or a weighted pipeline number.
+### 1. Revenue Forecast
+*"Will I hit $25M this quarter?"* / *"Am I on track for quota?"*
+
+Runs a single Monte Carlo simulation against all open opportunities and returns the
+probability of hitting a specific revenue target, the expected outcome, and the realistic
+range (P10–P90).
+
+### 2. Forecast Scenarios — Commit / Most Likely / Best Case
+*"What is my commit vs. best case?"* / *"Show me my forecast scenarios"*
+
+Runs three Monte Carlo simulations in one call, each filtering the pipeline by a different
+probability threshold to produce the standard sales forecasting tiers:
+
+| Tier | Deals Included | Threshold |
+|------|---------------|-----------|
+| **Commit** | High-confidence only | Probability ≥ 80% |
+| **Most Likely** | Likely to close | Probability ≥ 50% |
+| **Best Case** | Everything in pipeline | All open deals |
+
+A revenue target is optional — without one, each tier returns its expected revenue range.
+With one, each tier also shows the probability of hitting that target.
+
+### 3. What-If Scenario Analysis
+*"What if the Acme deal slips 30 days?"* / *"What if TechCo drops to 40%?"*
+
+Finds a named deal in the pipeline by partial name match, runs a baseline simulation,
+applies a hypothetical change in memory (no Salesforce data is modified), runs the scenario
+simulation, and returns a before/after comparison with the net probability impact.
+
+Supports two types of changes (or both at once):
+- **Probability change** — `newProbabilityPct`: e.g., 40 means the deal drops to 40%
+- **Close date slip** — `closeDateSlipDays`: e.g., 30 means the deal pushes one month
+
+---
+
+## How It Works
 
 ```
 User: "Will I hit $25M this quarter?"
@@ -73,39 +105,42 @@ flowchart TD
     U([User\nSlack / Experience Cloud / Chat]) -->|Natural language question| LLM
 
     subgraph Salesforce
-        LLM[Agentforce LLM Orchestrator\nRecognizes forecasting intent]
-        LLM -->|Invokes action with revenueTarget| FLOW
+        LLM[Agentforce LLM Orchestrator\nRoutes to the right action]
 
-        FLOW[AutoLaunched Flow\nRun_Revenue_Forecast_Monte_Carlo]
-        FLOW -->|Calls @InvocableMethod| APEX
+        LLM -->|revenueTarget| F1[Run_Revenue_Forecast_Monte_Carlo\nAutoLaunched Flow]
+        LLM -->|revenueTarget optional| F2[Run_Forecast_Scenarios\nAutoLaunched Flow]
+        LLM -->|dealSearchTerm + changes| F3[Run_What_If_Scenario\nAutoLaunched Flow]
 
-        APEX[MonteCarloActionHandler.cls\nwith sharing — auto user-scoped]
-        APEX -->|SOQL: Amount · Probability · CloseDate| OPPS
+        F1 -->|@InvocableMethod| A1[MonteCarloActionHandler.cls]
+        F2 -->|@InvocableMethod| A2[ForecastScenariosActionHandler.cls\n3 sequential callouts]
+        F3 -->|@InvocableMethod| A3[WhatIfScenarioActionHandler.cls\nbaseline + scenario callouts]
 
-        OPPS[(Opportunity Records\nFiltered to current user\nOpen + closing this quarter)]
-        OPPS -->|Deal math only| APEX
+        A1 & A2 & A3 -->|SOQL: Amount · Probability · CloseDate| OPPS
+        OPPS[(Opportunity Records\nScoped to current user\nvia with sharing)]
+        OPPS --> A1 & A2 & A3
 
-        APEX -->|HTTP POST via Named Credential| NC
-        NC[Named Credential\nMonteCarlo_API]
+        A1 & A2 & A3 -->|HTTP POST via Named Credential| NC[Named Credential\nMonteCarlo_API]
     end
 
     subgraph Heroku ["Heroku  (Stateless)"]
-        NC -->|HTTPS JSON payload| API
-        API[FastAPI — main.py\nPydantic validation]
-        API --> SIM
-        SIM[simulation.py\nNumPy vectorized\n10,000 Monte Carlo runs]
+        NC -->|HTTPS JSON payload| API[FastAPI — main.py\nPydantic validation]
+        API --> SIM[simulation.py\nNumPy vectorized\n10,000 Monte Carlo runs]
         SIM -->|mean · p10 · p90 · target probability| API
         API -->|SimulationResponse JSON| NC
     end
 
-    NC -->|Parsed ActionOutput| FLOW
-    FLOW -->|summary · targetProbabilityPct · ranges| LLM
+    NC --> F1 & F2 & F3
+    F1 & F2 & F3 -->|summary / overallSummary| LLM
     LLM -->|Plain-English answer| U
 
     style U fill:#00A1E0,color:#fff
     style LLM fill:#0070D2,color:#fff
-    style FLOW fill:#1B5E20,color:#fff
-    style APEX fill:#1B5E20,color:#fff
+    style F1 fill:#1B5E20,color:#fff
+    style F2 fill:#1B5E20,color:#fff
+    style F3 fill:#1B5E20,color:#fff
+    style A1 fill:#1B5E20,color:#fff
+    style A2 fill:#1B5E20,color:#fff
+    style A3 fill:#1B5E20,color:#fff
     style OPPS fill:#1B5E20,color:#fff
     style NC fill:#1B5E20,color:#fff
     style SIM fill:#FF6B35,color:#fff
@@ -114,43 +149,110 @@ flowchart TD
 
 **What this diagram shows:**
 - Salesforce Opportunities stay in Salesforce — only deal math (`amount`, `probability`, `close_date`) leaves
-- `with sharing` on the Apex class automatically scopes the SOQL to the current user — no user ID input required
+- `with sharing` on all Apex classes automatically scopes SOQL to the current user
 - The simulation service is fully stateless — no data stored after the HTTP response
 - The LLM never sees raw Opportunity data — only the computed narrative summary
-
-**Key design decisions:**
-- `with sharing` on the Apex class means users only forecast their own pipeline —
-  no user ID input needed, no ownerIdFilter required
-- Only `amount`, `probability`, and `close_date` leave Salesforce — no names,
-  accounts, contacts, or custom fields
-- The simulation service is fully stateless — no database, no sessions, no data at rest
-- The AutoLaunched Flow acts as the Agentforce action wrapper, calling the Apex class
-- `timeHorizonDays` defaults to end of current calendar quarter automatically if
-  the user doesn't specify a custom window
 
 ---
 
 ## Agent Action Inputs & Outputs
 
-### Inputs
+### Action 1: Run Revenue Forecast
+
+**Inputs**
 
 | Input | Type | Required | Description |
 |-------|------|----------|-------------|
-| `revenueTarget` | Number | Yes | Dollar amount to forecast. Extracted from the user's message — e.g., "Will I hit $25M?" → `25000000` |
-| `timeHorizonDays` | Number | No | Days from today to include opportunities closing within. Leave blank for "this quarter" — auto-calculated |
+| `revenueTarget` | Number | Yes | Dollar amount to forecast. Extracted from user message — e.g., "Will I hit $25M?" → `25000000` |
+| `timeHorizonDays` | Number | No | Days from today to include. Blank = auto-calculates end of current quarter |
 
-### Outputs
+**Outputs**
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `summary` | String | Plain-English answer — read this directly to the user |
+| `summary` | String | Plain-English answer — read directly to the user |
 | `targetProbabilityPct` | String | Probability of hitting the target, e.g., `"68.3%"` |
 | `expectedRevenue` | Number | Mean revenue across all simulations (USD) |
 | `p10Revenue` | Number | 10th percentile — pessimistic scenario |
 | `p90Revenue` | Number | 90th percentile — optimistic scenario |
-| `opportunitiesAnalyzed` | Number | Count of open opps included in simulation |
-| `success` | Boolean | `true` if simulation completed; `false` on error |
+| `opportunitiesAnalyzed` | Number | Count of open opportunities included |
+| `success` | Boolean | `true` if simulation completed successfully |
 | `errorMessage` | String | Error description if `success` is false |
+
+---
+
+### Action 2: Run Forecast Scenarios
+
+**Inputs**
+
+| Input | Type | Required | Description |
+|-------|------|----------|-------------|
+| `revenueTarget` | Number | No | Optional dollar target. If provided, each tier shows probability of hitting it. If omitted, each tier shows expected revenues only |
+| `timeHorizonDays` | Number | No | Blank = auto-calculates end of current quarter |
+
+**Outputs** (per tier: `commit*`, `mostLikely*`, `bestCase*`)
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `overallSummary` | String | Combined narrative comparing all three tiers — read directly to the user |
+| `commitProbabilityPct` | String | Probability of hitting target with committed deals (≥80%) |
+| `commitExpectedRevenue` | Number | Mean revenue in Commit scenario |
+| `commitP10Revenue` | Number | Pessimistic floor for Commit scenario |
+| `commitP90Revenue` | Number | Optimistic ceiling for Commit scenario |
+| `commitOppsCount` | Number | Deals qualifying for Commit tier |
+| *(same pattern for `mostLikely*` and `bestCase*`)* | | |
+| `success` | Boolean | `true` if all three simulations completed |
+| `errorMessage` | String | Error description if `success` is false |
+
+---
+
+### Action 3: Run What-If Scenario
+
+**Inputs**
+
+| Input | Type | Required | Description |
+|-------|------|----------|-------------|
+| `dealSearchTerm` | String | Yes | Partial deal or account name — e.g., `"Acme"` matches `"Acme Corp Enterprise Deal"` |
+| `revenueTarget` | Number | Yes | Dollar target for before/after probability comparison |
+| `newProbabilityPct` | Number | No | New win probability for the matched deal (0–100). Leave blank to keep existing |
+| `closeDateSlipDays` | Number | No | Push close date forward by this many days. Leave blank to keep existing |
+| `timeHorizonDays` | Number | No | Blank = auto-calculates end of current quarter |
+
+**Outputs**
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `overallSummary` | String | Before/after comparison narrative — read directly to the user |
+| `dealFound` | String | Full name of the matched opportunity |
+| `baselineProbabilityPct` | String | Probability with current unmodified pipeline |
+| `baselineExpectedRevenue` | Number | Mean revenue with current pipeline |
+| `scenarioProbabilityPct` | String | Probability after applying the what-if change |
+| `scenarioExpectedRevenue` | Number | Mean revenue after the what-if change |
+| `probabilityChange` | String | Net impact, e.g., `"+12.4%"` or `"-8.1%"` |
+| `success` | Boolean | `true` if analysis completed |
+| `errorMessage` | String | Error description if `success` is false |
+
+---
+
+## Example Utterances
+
+**Revenue Forecast:**
+- *"Will I hit $25 million this quarter?"*
+- *"What's my probability of closing $10M by end of Q1?"*
+- *"Am I on track for my $8M quota?"*
+- *"Give me a realistic revenue range for the next 30 days"*
+
+**Forecast Scenarios:**
+- *"What is my commit vs. best case?"*
+- *"Show me my forecast scenarios this quarter"*
+- *"What's my commit vs. best case for $25M?"*
+- *"What's my upside this quarter?"*
+
+**What-If Scenario:**
+- *"What if the Acme deal slips 30 days? Will I still hit $25M?"*
+- *"What happens to my $20M target if TechCo drops to 40%?"*
+- *"What if GlobalBank pushes to next quarter?"*
+- *"What if I close the Acme deal this week at 95% — does that get me to $25M?"*
 
 ---
 
@@ -167,13 +269,12 @@ Designed to answer *"what leaves Salesforce?"* clearly.
 **Never leaves Salesforce:**
 - Account names, opportunity names, contact names
 - Owner names or user details
-- Any custom fields
-- Any other standard fields
+- Any custom fields or other standard fields
 
 **Why this is safe:**
-The simulation engine only needs the mathematical inputs. The response contains
-only computed statistics — no raw data is echoed back. All computation runs in
-ephemeral memory; nothing is stored after the HTTP response completes.
+The simulation engine only needs the mathematical inputs. The response contains only
+computed statistics — no raw data is echoed back. All computation runs in ephemeral
+memory; nothing is stored after the HTTP response completes.
 
 For regulated industries, the service can be deployed in a customer-controlled
 VPC (AWS Lambda) or on-premise to keep even the anonymous statistical data
@@ -193,23 +294,31 @@ inside the customer's environment.
 ├── salesforce/
 │   ├── force-app/main/default/
 │   │   ├── classes/
-│   │   │   ├── MonteCarloActionHandler.cls          Invocable Apex (2 inputs)
-│   │   │   └── MonteCarloActionHandlerTest.cls      Unit tests
+│   │   │   ├── MonteCarloActionHandler.cls              Revenue Forecast (1 callout)
+│   │   │   ├── MonteCarloActionHandlerTest.cls
+│   │   │   ├── ForecastScenariosActionHandler.cls       Commit/Most Likely/Best Case (3 callouts)
+│   │   │   ├── ForecastScenariosActionHandlerTest.cls
+│   │   │   ├── WhatIfScenarioActionHandler.cls          What-If analysis (2 callouts)
+│   │   │   └── WhatIfScenarioActionHandlerTest.cls
 │   │   ├── flows/
-│   │   │   └── Run_Revenue_Forecast_Monte_Carlo     AutoLaunched Flow (action wrapper)
+│   │   │   ├── Run_Revenue_Forecast_Monte_Carlo         AutoLaunched Flow — action 1
+│   │   │   ├── Run_Forecast_Scenarios                   AutoLaunched Flow — action 2
+│   │   │   └── Run_What_If_Scenario                     AutoLaunched Flow — action 3
 │   │   ├── genAiFunctions/
-│   │   │   └── Run_Revenue_Forecast/                Agentforce action definition
+│   │   │   ├── Run_Revenue_Forecast/                    Agentforce action definition
+│   │   │   ├── Run_Forecast_Scenarios/                  Agentforce action definition
+│   │   │   └── Run_What_If_Scenario/                    Agentforce action definition
 │   │   ├── genAiPlugins/
-│   │   │   └── Revenue_Forecasting                  Agentforce topic
+│   │   │   └── Revenue_Forecasting                      Agentforce topic (all 3 actions)
 │   │   ├── bots/
-│   │   │   └── Monte_Carlo_Revenue_Forecaster/      Agent bot + version metadata
-│   │   ├── namedCredentials/                        MonteCarlo_API endpoint config
-│   │   └── remoteSiteSettings/                      Callout allowlist
+│   │   │   └── Monte_Carlo_Revenue_Forecaster/          Agent bot + version metadata
+│   │   ├── namedCredentials/                            MonteCarlo_API endpoint config
+│   │   └── remoteSiteSettings/                          Callout allowlist
 │   ├── manifest/
-│   │   └── package.xml                              Deployment manifest
+│   │   └── package.xml                                  Deployment manifest
 │   ├── specs/
-│   │   └── monteCarlorevenueForecaster.yaml         Agent creation spec
-│   └── README_SETUP.md                              Salesforce setup guide
+│   │   └── monteCarlorevenueForecaster.yaml             Agent creation spec
+│   └── README_SETUP.md                                  Salesforce setup guide
 │
 ├── deploy/
 │   ├── Dockerfile          Production container image
@@ -268,7 +377,7 @@ curl -X POST http://localhost:8000/api/v1/simulate \
 
 ```bash
 # Deploy all metadata in one command:
-# Apex class + test, AutoLaunched Flow, GenAiFunction, GenAiPlugin,
+# Apex classes + tests, AutoLaunched Flows, GenAiFunctions, GenAiPlugin,
 # Bot + BotVersion, Named Credential, Remote Site Setting
 sf project deploy start \
   --manifest salesforce/manifest/package.xml \
@@ -279,7 +388,7 @@ After deployment:
 1. Setup → Agentforce → Agents → open your agent
 2. Topics tab → **Add Topic from Org** → select **Revenue Forecasting**
 3. Activate the agent
-4. Ask: *"What's my probability of hitting $10M this quarter?"*
+4. Try: *"What's my probability of hitting $10M this quarter?"*
 
 See `salesforce/README_SETUP.md` for the full configuration walkthrough including
 Named Credential setup and troubleshooting.
@@ -301,17 +410,12 @@ pytest ../tests/ --cov=. --cov-report=term-missing    # with coverage
 **Salesforce Apex:**
 
 ```bash
+# Run all three test classes
 sf apex run test \
-  --class-names MonteCarloActionHandlerTest \
+  --class-names MonteCarloActionHandlerTest,ForecastScenariosActionHandlerTest,WhatIfScenarioActionHandlerTest \
   --target-org <your-org-alias> \
   --result-format human
 ```
-
-**Test utterances for the Agentforce agent:**
-- *"Will I hit $25 million this quarter?"*
-- *"What's my probability of closing $10M by end of Q1?"*
-- *"Am I on track for my $8M quota?"*
-- *"Give me a realistic revenue range for the next 30 days"*
 
 ---
 
