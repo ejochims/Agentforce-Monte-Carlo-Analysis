@@ -1,3 +1,0 @@
-global enum DataCleanRoomTemplateEnum {
-OVERLAP
-}

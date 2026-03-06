@@ -45,3 +45,6 @@ htmlcov/
 # ── Logs ─────────────────────────────────────────────────────────────────────
 *.log
 logs/
+
+# ── Salesforce DX tooling (local only, not source) ───────────────────────────
+.sfdx/
