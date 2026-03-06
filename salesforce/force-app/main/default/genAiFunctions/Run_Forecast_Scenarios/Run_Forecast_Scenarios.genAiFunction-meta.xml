@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Run Forecast Scenarios</masterLabel>
+    <description>Runs three Monte Carlo simulations to produce the standard sales forecast tiers: Commit (deals with >=80% probability), Most Likely (deals >=50%), and Best Case (all open deals). Use this when the user asks: "What is my commit vs. best case?", "Show me my forecast scenarios", "What's my upside this quarter?", "Compare my pessimistic vs. optimistic pipeline", or any question about forecast tiers. Required input: revenueTarget (the dollar amount, e.g. 25000000 for $25M). Optional input: timeHorizonDays (defaults to end of current quarter). Outputs: overallSummary (read directly to user), plus per-tier probability percentages, expected revenues, and opportunity counts.</description>
+    <invocationTarget>Run_Forecast_Scenarios</invocationTarget>
+    <invocationTargetType>flow</invocationTargetType>
+</GenAiFunction>

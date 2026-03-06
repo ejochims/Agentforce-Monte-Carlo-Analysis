@@ -6,6 +6,10 @@
         <name>ApexClass</name>
         <members>MonteCarloActionHandler</members>
         <members>MonteCarloActionHandlerTest</members>
+        <members>ForecastScenariosActionHandler</members>
+        <members>ForecastScenariosActionHandlerTest</members>
+        <members>WhatIfScenarioActionHandler</members>
+        <members>WhatIfScenarioActionHandlerTest</members>
     </types>
 
     <types>
@@ -21,11 +25,15 @@
     <types>
         <name>Flow</name>
         <members>Run_Revenue_Forecast_Monte_Carlo</members>
+        <members>Run_Forecast_Scenarios</members>
+        <members>Run_What_If_Scenario</members>
     </types>
 
     <types>
         <name>GenAiFunction</name>
         <members>Run_Revenue_Forecast</members>
+        <members>Run_Forecast_Scenarios</members>
+        <members>Run_What_If_Scenario</members>
     </types>
 
     <types>

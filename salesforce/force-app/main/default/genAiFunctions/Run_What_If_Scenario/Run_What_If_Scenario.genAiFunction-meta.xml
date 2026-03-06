@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Run What-If Scenario</masterLabel>
+    <description>Simulates the impact of a hypothetical change to a specific deal on overall revenue probability. Use this when the user asks: "What if the Acme deal slips 30 days?", "What happens to my number if TechCo drops to 40%?", "What if I close GlobalBank this week?", or any question involving a named deal and a change. Required inputs: dealSearchTerm (partial deal or account name, e.g. "Acme"), revenueTarget (dollar amount, e.g. 25000000). Optional inputs: newProbabilityPct (new win probability 0-100), closeDateSlipDays (days to push close date forward), timeHorizonDays (defaults to quarter end). Outputs: overallSummary (read directly to user), dealFound (matched deal name), baselineProbabilityPct, scenarioProbabilityPct, probabilityChange (net impact, e.g. "+12.4%").</description>
+    <invocationTarget>Run_What_If_Scenario</invocationTarget>
+    <invocationTargetType>flow</invocationTargetType>
+</GenAiFunction>
