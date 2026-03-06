@@ -111,9 +111,9 @@ flowchart TD
         LLM -->|revenueTarget optional| F2[Run_Forecast_Scenarios\nAutoLaunched Flow]
         LLM -->|dealSearchTerm + changes| F3[Run_What_If_Scenario\nAutoLaunched Flow]
 
-        F1 -->|@InvocableMethod| A1[MonteCarloActionHandler.cls]
-        F2 -->|@InvocableMethod| A2[ForecastScenariosActionHandler.cls\n3 sequential callouts]
-        F3 -->|@InvocableMethod| A3[WhatIfScenarioActionHandler.cls\nbaseline + scenario callouts]
+        F1 -->|Invocable Apex| A1[MonteCarloActionHandler.cls]
+        F2 -->|Invocable Apex| A2[ForecastScenariosActionHandler.cls\n3 sequential callouts]
+        F3 -->|Invocable Apex| A3[WhatIfScenarioActionHandler.cls\nbaseline + scenario callouts]
 
         A1 & A2 & A3 -->|SOQL: Amount · Probability · CloseDate| OPPS
         OPPS[(Opportunity Records\nScoped to current user\nvia with sharing)]
