@@ -102,24 +102,24 @@ cone of uncertainty is.
 
 ```mermaid
 flowchart TD
-    U([User]) -->|natural language question| LLM
+    U([User]) -->|natural language question| AGT
 
     subgraph Salesforce
-        LLM[Agentforce LLM]
-        LLM -->|invokes action| APEX[Apex Action Handler\nqueries Opportunities]
-        APEX -->|amount · probability · close date| API
+        AGT[Agentforce Agent]
+        AGT -->|invokes action| APEX[Apex Action Handler\nqueries Opportunities]
     end
 
     subgraph Heroku [Heroku]
         API[FastAPI\nMonte Carlo Engine\n10,000 simulations]
     end
 
+    APEX -->|amount · probability · close date| API
     API -->|mean · p10 · p90 · probability| APEX
-    APEX -->|plain-English summary| LLM
-    LLM -->|answer| U
+    APEX -->|plain-English summary| AGT
+    AGT -->|answer| U
 
     style U fill:#00A1E0,color:#fff
-    style LLM fill:#0070D2,color:#fff
+    style AGT fill:#0070D2,color:#fff
     style APEX fill:#1B5E20,color:#fff
     style API fill:#FF6B35,color:#fff
 ```
