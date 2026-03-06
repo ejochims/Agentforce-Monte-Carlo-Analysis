@@ -143,7 +143,7 @@
     <status>Active</status>
     <variables>
         <dataType>Number</dataType>
-        <description>The dollar amount the user wants to forecast probability of hitting across all three scenario tiers (Commit, Most Likely, Best Case). Extract this from the user&apos;s message — for example, if they say &quot;What is my commit vs. best case for $25M?&quot;, enter 25000000. Do not include currency symbols or commas. Required.</description>
+        <description>Optional. If the user mentions a specific dollar target (e.g. &quot;What is my commit vs. best case for $25M?&quot;), enter it here as a number like 25000000. The output will then include probability of hitting that target for each tier. If the user just asks &quot;what is my commit?&quot; or &quot;show me my forecast scenarios&quot; with no target mentioned, leave this blank — the summary will show expected revenues for each tier instead.</description>
         <isCollection>false</isCollection>
         <isInput>true</isInput>
         <isOutput>false</isOutput>

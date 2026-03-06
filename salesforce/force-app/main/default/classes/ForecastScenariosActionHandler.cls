@@ -39,8 +39,8 @@ public with sharing class ForecastScenariosActionHandler {
 
         @InvocableVariable(
             label='Revenue Target (USD)'
-            description='The dollar amount to forecast probability of hitting across all three scenario tiers. Example: 25000000 for $25M. Required.'
-            required=true
+            description='Optional dollar amount to show probability of hitting across all three tiers. Example: 25000000 for $25M. If omitted, the summary shows expected revenues without a probability-against-target.'
+            required=false
         )
         public Decimal revenueTarget;
 
@@ -272,11 +272,14 @@ public with sharing class ForecastScenariosActionHandler {
                 'close_date'  => String.valueOf(opp.CloseDate)
             });
         }
+        List<Decimal> targets = (revenueTarget != null && revenueTarget > 0)
+            ? new List<Decimal>{ revenueTarget }
+            : new List<Decimal>();
         return new Map<String, Object>{
             'opportunities'     => oppList,
             'num_simulations'   => NUM_SIMULATIONS,
             'time_horizon_days' => horizonDays,
-            'revenue_targets'   => new List<Decimal>{ revenueTarget }
+            'revenue_targets'   => targets
         };
     }
 
@@ -322,31 +325,37 @@ public with sharing class ForecastScenariosActionHandler {
     }
 
     private static String buildSummary(ActionOutput o, Decimal target) {
-        String t = formatCurrency(target);
+        Boolean hasTarget = (target != null && target > 0);
+        String t = hasTarget ? formatCurrency(target) : null;
 
-        String summary = 'Here are your three forecast scenarios for ' + t + ':\n\n';
+        String summary = hasTarget
+            ? 'Here are your three forecast scenarios for ' + t + ':\n\n'
+            : 'Here are your three forecast scenarios:\n\n';
 
         summary += 'COMMIT (' + o.commitOppsCount + ' deals ≥80% probability): ';
         if (o.commitOppsCount > 0) {
-            summary += o.commitProbabilityPct + ' chance of hitting ' + t
-                + '. Expected: ' + formatCurrency(o.commitExpectedRevenue) + '.';
+            summary += 'Expected ' + formatCurrency(o.commitExpectedRevenue);
+            if (hasTarget) summary += ' (' + o.commitProbabilityPct + ' chance of hitting ' + t + ')';
+            summary += '.';
         } else {
             summary += 'No high-confidence deals in pipeline.';
         }
 
         summary += '\n\nMOST LIKELY (' + o.mostLikelyOppsCount + ' deals ≥50% probability): ';
         if (o.mostLikelyOppsCount > 0) {
-            summary += o.mostLikelyProbabilityPct + ' chance of hitting ' + t
-                + '. Expected: ' + formatCurrency(o.mostLikelyExpectedRevenue) + '.';
+            summary += 'Expected ' + formatCurrency(o.mostLikelyExpectedRevenue);
+            if (hasTarget) summary += ' (' + o.mostLikelyProbabilityPct + ' chance of hitting ' + t + ')';
+            summary += '.';
         } else {
             summary += 'No deals above 50% probability.';
         }
 
         summary += '\n\nBEST CASE (' + o.bestCaseOppsCount + ' total open deals): ';
-        summary += o.bestCaseProbabilityPct + ' chance of hitting ' + t
-            + '. Expected: ' + formatCurrency(o.bestCaseExpectedRevenue)
+        summary += 'Expected ' + formatCurrency(o.bestCaseExpectedRevenue)
             + ', ranging from ' + formatCurrency(o.bestCaseP10Revenue)
-            + ' to ' + formatCurrency(o.bestCaseP90Revenue) + '.';
+            + ' to ' + formatCurrency(o.bestCaseP90Revenue);
+        if (hasTarget) summary += ' (' + o.bestCaseProbabilityPct + ' chance of hitting ' + t + ')';
+        summary += '.';
 
         return summary;
     }
