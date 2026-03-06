@@ -102,48 +102,25 @@ cone of uncertainty is.
 
 ```mermaid
 flowchart TD
-    U([User\nSlack / Experience Cloud / Chat]) -->|Natural language question| LLM
+    U([User]) -->|natural language question| LLM
 
     subgraph Salesforce
-        LLM[Agentforce LLM Orchestrator\nRoutes to the right action]
-
-        LLM -->|revenueTarget| F1[Run_Revenue_Forecast_Monte_Carlo\nAutoLaunched Flow]
-        LLM -->|revenueTarget optional| F2[Run_Forecast_Scenarios\nAutoLaunched Flow]
-        LLM -->|dealSearchTerm + changes| F3[Run_What_If_Scenario\nAutoLaunched Flow]
-
-        F1 -->|Invocable Apex| A1[MonteCarloActionHandler.cls]
-        F2 -->|Invocable Apex| A2[ForecastScenariosActionHandler.cls\n3 sequential callouts]
-        F3 -->|Invocable Apex| A3[WhatIfScenarioActionHandler.cls\nbaseline + scenario callouts]
-
-        A1 & A2 & A3 -->|SOQL: Amount · Probability · CloseDate| OPPS
-        OPPS[(Opportunity Records\nScoped to current user\nvia with sharing)]
-        OPPS --> A1 & A2 & A3
-
-        A1 & A2 & A3 -->|HTTP POST via Named Credential| NC[Named Credential\nMonteCarlo_API]
+        LLM[Agentforce LLM]
+        LLM -->|invokes action| APEX[Apex Action Handler\nqueries Opportunities]
+        APEX -->|amount · probability · close date| API
     end
 
-    subgraph Heroku ["Heroku  (Stateless)"]
-        NC -->|HTTPS JSON payload| API[FastAPI — main.py\nPydantic validation]
-        API --> SIM[simulation.py\nNumPy vectorized\n10,000 Monte Carlo runs]
-        SIM -->|mean · p10 · p90 · target probability| API
-        API -->|SimulationResponse JSON| NC
+    subgraph Heroku [Heroku]
+        API[FastAPI\nMonte Carlo Engine\n10,000 simulations]
     end
 
-    NC --> F1 & F2 & F3
-    F1 & F2 & F3 -->|summary / overallSummary| LLM
-    LLM -->|Plain-English answer| U
+    API -->|mean · p10 · p90 · probability| APEX
+    APEX -->|plain-English summary| LLM
+    LLM -->|answer| U
 
     style U fill:#00A1E0,color:#fff
     style LLM fill:#0070D2,color:#fff
-    style F1 fill:#1B5E20,color:#fff
-    style F2 fill:#1B5E20,color:#fff
-    style F3 fill:#1B5E20,color:#fff
-    style A1 fill:#1B5E20,color:#fff
-    style A2 fill:#1B5E20,color:#fff
-    style A3 fill:#1B5E20,color:#fff
-    style OPPS fill:#1B5E20,color:#fff
-    style NC fill:#1B5E20,color:#fff
-    style SIM fill:#FF6B35,color:#fff
+    style APEX fill:#1B5E20,color:#fff
     style API fill:#FF6B35,color:#fff
 ```
 
